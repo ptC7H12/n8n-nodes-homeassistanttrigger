@@ -1,19 +1,19 @@
 {
-  "name": "n8n-nodes-<...>",
+  "name": "n8n-nodes-homeassistanttrigger",
   "version": "0.1.0",
-  "description": "",
+  "description": "Home assistant trigger node via websocket",
   "keywords": [
     "n8n-community-node-package"
   ],
   "license": "MIT",
   "homepage": "",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "Paul Heptin",
+    "email": "c7h12@outlook.de"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/<...>/n8n-nodes-<...>.git"
+    "url": "https://github.com/ptC7H12/n8n-nodes-homeassistanttrigger.git"
   },
   "engines": {
     "node": ">=18.10",
