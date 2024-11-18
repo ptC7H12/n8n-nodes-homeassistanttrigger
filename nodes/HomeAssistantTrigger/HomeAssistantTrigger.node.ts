@@ -49,7 +49,6 @@ export class HomeAssistantTrigger implements INodeType {
                 name: 'entityId',
                 type: 'string',
                 default: '',
-                required: false,
                 description: 'The ID of the entity to monitor (leave empty to monitor all entities)',
             },
             {
@@ -57,7 +56,6 @@ export class HomeAssistantTrigger implements INodeType {
                 name: 'fromState',
                 type: 'string',
                 default: '',
-                required: false,
                 description: 'The state to transition from (only for subscribe_trigger)',
             },
             {
@@ -65,7 +63,6 @@ export class HomeAssistantTrigger implements INodeType {
                 name: 'toState',
                 type: 'string',
                 default: '',
-                required: false,
                 description: 'The state to transition to (only for subscribe_trigger)',
             },
             {

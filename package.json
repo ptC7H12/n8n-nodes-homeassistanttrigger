@@ -36,13 +36,14 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/homeAssistantApi.credentials.js"
+      "dist/credentials/HomeAssistantApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/Homeassistanttrigger/HassTrigger.node.js"
+      "dist/nodes/HomeAssistantTrigger/HomeAssistantTrigger.node.js"
     ]
   },
   "devDependencies": {
+    "@types/node": "^22.9.0",
     "@typescript-eslint/parser": "^7.15.0",
     "eslint": "^8.56.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.1",
@@ -55,6 +56,6 @@
     "n8n-workflow": "*"
   },
   "dependencies": {
-    "socket.io-client": "^4.7.5"
+    "socket.io-client": "^4.8.1"
   }
 }
