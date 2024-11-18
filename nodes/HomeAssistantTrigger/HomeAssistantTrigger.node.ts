@@ -4,6 +4,7 @@ import {
     IDataObject,
     ITriggerFunctions,
     ITriggerResponse,
+		NodeApiError,
     ICredentialDataDecryptedObject,
 } from 'n8n-workflow';
 import { io, Socket } from 'socket.io-client';
