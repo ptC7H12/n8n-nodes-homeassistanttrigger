@@ -54,4 +54,7 @@
   "peerDependencies": {
     "n8n-workflow": "*"
   }
+  "dependencies": {
+    "socket.io-client": "^4.7.5"
+  }
 }
