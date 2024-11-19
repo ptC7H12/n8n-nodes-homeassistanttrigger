@@ -186,13 +186,13 @@ export class HomeAssistantTrigger implements INodeType {
 			}		
 		}
 
-		async function closeFunction() {
-			// console.log('DISCONNECTING from Home Assistant...');
-			socket.close();
-		}
+		//async function closeFunction() {
+		//	// console.log('DISCONNECTING from Home Assistant...');
+		//	socket.close();
+		//}
 
-		return {
-			closeFunction,
-		};
+		return;// {
+		//	closeFunction,
+		//};
     }
 }
