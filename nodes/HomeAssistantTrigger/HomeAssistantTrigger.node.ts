@@ -100,7 +100,7 @@ export class HomeAssistantTrigger implements INodeType {
 
 		async function closeFunction() {
 			if (socket.connected) {
-				this.logger.info('Disconnecting from Home Assistant WebSocket');
+				console.log('Disconnecting from Home Assistant WebSocket');
 				socket.disconnect();
 			}
 		}
@@ -109,7 +109,7 @@ export class HomeAssistantTrigger implements INodeType {
 			socket.connect();
 
 			socket.on('connect', () => {
-				this.logger.info('Connected to Home Assistant WebSocket');
+				console.log('Connected to Home Assistant WebSocket');
 				socket.emit('auth', { access_token: credentials.authToken });
 			});
 
@@ -121,8 +121,8 @@ export class HomeAssistantTrigger implements INodeType {
 			});
 
 			socket.on('auth_ok', () => {
-				this.logger.info('Authentication successful');
-				this.logger.info(`Subscribing to ${eventType}...`);
+				console.log('Authentication successful');
+				console.log(`Subscribing to ${eventType}...`);
 
 				if (eventType === 'subscribe_trigger') {
 					const entityIds = entityId.split(',').map(id => id.trim());
@@ -136,13 +136,13 @@ export class HomeAssistantTrigger implements INodeType {
 					if (toState) {
 						triggerCondition.to = toState.split(',').map(state => state.trim());
 					}
-					this.logger.info(`Trigger condition: ${JSON.stringify(triggerCondition)}`);
+					console.log(`Trigger condition: ${JSON.stringify(triggerCondition)}`);
 					socket.emit('subscribe_trigger', {
 						type: eventType,
 						trigger: triggerCondition,
 					});
 				} else if (eventType === '*') {
-					this.logger.info('Subscribing to all events');
+					console.log('Subscribing to all events');
 					socket.emit('subscribe_events', { event_type: '*' });
 				} else {
 					socket.emit('subscribe_events', { event_type: eventType });
@@ -174,7 +174,7 @@ export class HomeAssistantTrigger implements INodeType {
 			});
 
 		} catch (error) {
-			closeFunction();
+			closeFunction;
 			if (error.name === 'NodeApiError') {
 				throw error;
 			} else {
