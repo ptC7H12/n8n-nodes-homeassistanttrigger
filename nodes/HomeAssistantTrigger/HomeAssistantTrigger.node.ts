@@ -79,71 +79,71 @@ export class HomeAssistantTrigger implements INodeType {
     };
 
     async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
-        const wsUrl = this.getNodeParameter('wsUrl') as string;
-        const eventType = this.getNodeParameter('eventType') as string;
-        const entityId = this.getNodeParameter('entityId') as string;
-        const fromState = this.getNodeParameter('fromState') as string;
-        const toState = this.getNodeParameter('toState') as string;
-        const includeEventData = this.getNodeParameter('includeEventData') as boolean;
-        //const credentials = this.getCredentials('homeAssistantApi');
-		const returnData: ITriggerResponse[] = [];
+		const wsUrl = this.getNodeParameter('wsUrl') as string;
+		const eventType = this.getNodeParameter('eventType') as string;
+		const entityId = this.getNodeParameter('entityId') as string;
+		const fromState = this.getNodeParameter('fromState') as string;
+		const toState = this.getNodeParameter('toState') as string;
+		const includeEventData = this.getNodeParameter('includeEventData') as boolean;
 
-        const credentials = await this.getCredentials('homeAssistantApi') as ICredentialDataDecryptedObject;
-        
-		try {
-			if (!credentials) {
-				throw new Error('No credentials returned!');
+		const credentials = await this.getCredentials('homeAssistantApi') as ICredentialDataDecryptedObject;
+
+		if (!credentials) {
+			throw new NodeOperationError(this.getNode(), 'No credentials returned!');
+		}
+
+		const socket: Socket = io(wsUrl, {
+			auth: {
+				token: credentials.authToken as string,
+			},
+			autoConnect: false,
+		});
+
+		const closeFunction = () => {
+			if (socket.connected) {
+				this.logger.info('Disconnecting from Home Assistant WebSocket');
+				socket.disconnect();
 			}
+		};
 
-			const socket: Socket = io(wsUrl, {
-				auth: {
-					token: credentials.authToken as string,
-				},
-				autoConnect: false,
-			});
-			
+		try {
 			socket.connect();
 
 			socket.on('connect', () => {
-				console.log('Connected to Home Assistant WebSocket');
+				this.logger.info('Connected to Home Assistant WebSocket');
 				socket.emit('auth', { access_token: credentials.authToken });
 			});
-			
-			// Handle connection errors
+
 			socket.on('connect_error', (error) => {
-				const errorData = {
-						message: 'WebSocket connection error',
-						description: error.message,
-				};
-				throw new NodeApiError(this.getNode(), errorData);
+				throw new NodeApiError(this.getNode(), {
+					message: 'WebSocket connection error',
+					description: error.message,
+				});
 			});
 
 			socket.on('auth_ok', () => {
-				console.log('Authentication successful');
-				console.log(`Subscribing to ${eventType}...`);
+				this.logger.info('Authentication successful');
+				this.logger.info(`Subscribing to ${eventType}...`);
 
 				if (eventType === 'subscribe_trigger') {
-					const entityIds = entityId.split(',');
+					const entityIds = entityId.split(',').map(id => id.trim());
 					const triggerCondition: IDataObject = {
 						platform: 'state',
+						entity_id: entityIds,
 					};
 					if (fromState) {
-						triggerCondition.from = fromState.split(',');
+						triggerCondition.from = fromState.split(',').map(state => state.trim());
 					}
 					if (toState) {
-						triggerCondition.to = toState.split(',');
+						triggerCondition.to = toState.split(',').map(state => state.trim());
 					}
-					for (const id of entityIds) {
-						console.log(`entityId: ${id}`);
-						triggerCondition.entity_id = id;
-						console.log(`triggerCondition: ${JSON.stringify(triggerCondition)}`);
-						socket.emit('subscribe_trigger', {
-							type: eventType,
-							trigger: triggerCondition,
-						});
-					}
+					this.logger.info(`Trigger condition: ${JSON.stringify(triggerCondition)}`);
+					socket.emit('subscribe_trigger', {
+						type: eventType,
+						trigger: triggerCondition,
+					});
 				} else if (eventType === '*') {
-					console.log('Subscribing to all events');
+					this.logger.info('Subscribing to all events');
 					socket.emit('subscribe_events', { event_type: '*' });
 				} else {
 					socket.emit('subscribe_events', { event_type: eventType });
@@ -151,48 +151,40 @@ export class HomeAssistantTrigger implements INodeType {
 			});
 
 			socket.on('auth_invalid', (error) => {
-				console.error('Authentication failed:', error);
-				socket.close();
-				
-				const errorData = {
-						message: 'WebSocket connection error',
-						description: error.message,
-				};
-				throw new NodeApiError(this.getNode(), errorData);
+				throw new NodeApiError(this.getNode(), {
+					message: 'Authentication failed',
+					description: error.message,
+				});
 			});
 
 			socket.on('event', (message) => {
 				if (message.event_type === eventType || eventType === '*') {
-					if (entityId && message.data.entity_id !== entityId) {
-						return;//Data.push({ json: { event: message.event_type, data } });
+					const entityIds = entityId.split(',').map(id => id.trim());
+					if (entityIds.length === 0 || entityIds.includes(message.data.entity_id)) {
+						const output = includeEventData ? message : { entity_id: message.data.entity_id, state: message.data.new_state };
+						this.emit([this.helpers.returnJsonArray(output)]);
 					}
-					const output = includeEventData ? message : { entity_id: message.data.entity_id, state: message.data.new_state };
-					this.emit([this.helpers.returnJsonArray(output)]);
 				}
 			});
 
+			// Warten auf erfolgreiche Verbindung
+			await new Promise((resolve, reject) => {
+				socket.on('auth_ok', resolve);
+				socket.on('auth_invalid', reject);
+				setTimeout(() => reject(new Error('Connection timeout')), 10000);
+			});
 
-			// Wait for a short time to allow for connection and initial data receipt
-			await new Promise(resolve => sleep(1000));
-
-			// Disconnect after processing
-			socket.disconnect();
-			
-		} catch (error){
+		} catch (error) {
+			closeFunction();
 			if (error.name === 'NodeApiError') {
 				throw error;
 			} else {
 				throw new NodeOperationError(this.getNode(), `Execution error: ${error.message}`);
-			}		
+			}
 		}
 
-		//async function closeFunction() {
-		//	// console.log('DISCONNECTING from Home Assistant...');
-		//	socket.close();
-		//}
-
-		return;// {
-		//	closeFunction,
-		//};
-    }
+		return {
+			closeFunction,
+		};
+	}
 }
