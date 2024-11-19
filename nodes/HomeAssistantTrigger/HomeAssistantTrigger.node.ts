@@ -4,8 +4,8 @@ import {
     IDataObject,
     ITriggerFunctions,
     ITriggerResponse,
-	  NodeApiError,
-	  NodeOperationError,
+	NodeApiError,
+	NodeOperationError,
     ICredentialDataDecryptedObject,
 } from 'n8n-workflow';
 import { io, Socket } from 'socket.io-client';
@@ -98,7 +98,7 @@ export class HomeAssistantTrigger implements INodeType {
 			autoConnect: false,
 		});
 
-		const closeFunction = () => void => {
+		const closeFunction = () => void = () => {
 			if (socket.connected) {
 				this.logger.info('Disconnecting from Home Assistant WebSocket');
 				socket.disconnect();
