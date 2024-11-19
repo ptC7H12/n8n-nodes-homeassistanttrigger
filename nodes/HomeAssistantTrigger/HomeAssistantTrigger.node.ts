@@ -23,7 +23,7 @@ export class HomeAssistantTrigger implements INodeType {
             name: 'Home Assistant Trigger',
         },
         inputs: [],
-        outputs: [NodeConnectionType.main],
+        outputs: [NodeConnectionType.Main],
         credentials: [
             {
                 name: 'homeAssistantApi',
@@ -35,7 +35,7 @@ export class HomeAssistantTrigger implements INodeType {
                 displayName: 'WebSocket URL',
                 name: 'wsUrl',
                 type: 'string',
-                default: 'ws://localhost:8123/api/websocket',
+                default: 'ws://homeassistant.local:8123/api/websocket',
                 required: true,
                 description: 'The WebSocket URL of the Home Assistant instance',
             },
