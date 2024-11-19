@@ -87,74 +87,102 @@ export class HomeAssistantTrigger implements INodeType {
 
         const credentials = await this.getCredentials('homeAssistantApi') as ICredentialDataDecryptedObject;
         
-        if (!credentials) {
-            throw new Error('No credentials returned!');
-        }
+		try {
+			if (!credentials) {
+				throw new Error('No credentials returned!');
+			}
 
-        const socket: Socket = io(wsUrl, {
-            auth: {
-                token: credentials.authToken as string,
-            },
-            autoConnect: false,
-        });
+			const socket: Socket = io(wsUrl, {
+				auth: {
+					token: credentials.authToken as string,
+				},
+				autoConnect: false,
+			});
+			
+			socket.connect();
 
-        socket.on('connect', () => {
-            console.log('Connected to Home Assistant WebSocket');
-            socket.emit('auth', { access_token: credentials.authToken });
-        });
+			socket.on('connect', () => {
+				console.log('Connected to Home Assistant WebSocket');
+				socket.emit('auth', { access_token: credentials.authToken });
+			});
+			
+			// Handle connection errors
+			socket.on('connect_error', (error) => {
+				const errorData = {
+						message: 'WebSocket connection error',
+						description: error.message,
+				};
+				throw new NodeApiError(this.getNode(), errorData);
+			});
 
-        socket.on('auth_ok', () => {
-            console.log('Authentication successful');
-            console.log(`Subscribing to ${eventType}...`);
+			socket.on('auth_ok', () => {
+				console.log('Authentication successful');
+				console.log(`Subscribing to ${eventType}...`);
 
-            if (eventType === 'subscribe_trigger') {
-                const entityIds = entityId.split(',');
-                const triggerCondition: IDataObject = {
-                    platform: 'state',
-                };
-                if (fromState) {
-                    triggerCondition.from = fromState.split(',');
-                }
-                if (toState) {
-                    triggerCondition.to = toState.split(',');
-                }
-                for (const id of entityIds) {
-                    console.log(`entityId: ${id}`);
-                    triggerCondition.entity_id = id;
-                    console.log(`triggerCondition: ${JSON.stringify(triggerCondition)}`);
-                    socket.emit('subscribe_trigger', {
-                        type: eventType,
-                        trigger: triggerCondition,
-                    });
-                }
-            } else if (eventType === '*') {
-                console.log('Subscribing to all events');
-                socket.emit('subscribe_events', { event_type: '*' });
-            } else {
-                socket.emit('subscribe_events', { event_type: eventType });
-            }
-        });
+				if (eventType === 'subscribe_trigger') {
+					const entityIds = entityId.split(',');
+					const triggerCondition: IDataObject = {
+						platform: 'state',
+					};
+					if (fromState) {
+						triggerCondition.from = fromState.split(',');
+					}
+					if (toState) {
+						triggerCondition.to = toState.split(',');
+					}
+					for (const id of entityIds) {
+						console.log(`entityId: ${id}`);
+						triggerCondition.entity_id = id;
+						console.log(`triggerCondition: ${JSON.stringify(triggerCondition)}`);
+						socket.emit('subscribe_trigger', {
+							type: eventType,
+							trigger: triggerCondition,
+						});
+					}
+				} else if (eventType === '*') {
+					console.log('Subscribing to all events');
+					socket.emit('subscribe_events', { event_type: '*' });
+				} else {
+					socket.emit('subscribe_events', { event_type: eventType });
+				}
+			});
 
-        socket.on('auth_invalid', (message) => {
-            console.error('Authentication failed:', message);
-            socket.close();
-        });
+			socket.on('auth_invalid', (error) => {
+				console.error('Authentication failed:', error);
+				socket.close();
+				
+				const errorData = {
+						message: 'WebSocket connection error',
+						description: error.message,
+				};
+				throw new NodeApiError(this.getNode(), errorData);
+			});
 
-        socket.on('event', (message) => {
-            if (message.event_type === eventType || eventType === '*') {
-                if (entityId && message.data.entity_id !== entityId) {
-                    return;
-                }
-                const output = includeEventData ? message : { entity_id: message.data.entity_id, state: message.data.new_state };
-                this.emit([this.helpers.returnJsonArray(output)]);
-            }
-        });
+			socket.on('event', (message) => {
+				if (message.event_type === eventType || eventType === '*') {
+					if (entityId && message.data.entity_id !== entityId) {
+						return;
+					}
+					const output = includeEventData ? message : { entity_id: message.data.entity_id, state: message.data.new_state };
+					this.emit([this.helpers.returnJsonArray(output)]);
+				}
+			});
 
-        socket.connect();
 
-        async function closeFunction() {
-            socket.close();
-        }
+			async function closeFunction() {
+				socket.close();
+			}
+		} catch (error){
+			if (this.continueOnFail()) {
+                    returnData.push({ json: { error: error.message }, pairedItem: itemIndex });
+			} else {
+				if (error.name === 'NodeApiError') {
+					throw error;
+				} else {
+					throw new NodeOperationError(this.getNode(), `Execution error: ${error.message}`, { itemIndex });
+				}
+			}
+		}
 
         return {
             closeFunction,
