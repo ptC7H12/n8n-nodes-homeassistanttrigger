@@ -86,7 +86,7 @@ export class HomeAssistantTrigger implements INodeType {
         const toState = this.getNodeParameter('toState') as string;
         const includeEventData = this.getNodeParameter('includeEventData') as boolean;
         //const credentials = this.getCredentials('homeAssistantApi');
-		const returnData: INodeExecutionData[] = [];
+		const returnData: ITriggerResponse[] = [];
 
         const credentials = await this.getCredentials('homeAssistantApi') as ICredentialDataDecryptedObject;
         
