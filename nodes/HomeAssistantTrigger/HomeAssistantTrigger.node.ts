@@ -4,7 +4,9 @@ import {
     IDataObject,
     ITriggerFunctions,
     ITriggerResponse,
-		NodeApiError,
+	NodeApiError,
+	NodeOperationError,
+	sleep,
     ICredentialDataDecryptedObject,
 } from 'n8n-workflow';
 import { io, Socket } from 'socket.io-client';
@@ -84,6 +86,7 @@ export class HomeAssistantTrigger implements INodeType {
         const toState = this.getNodeParameter('toState') as string;
         const includeEventData = this.getNodeParameter('includeEventData') as boolean;
         //const credentials = this.getCredentials('homeAssistantApi');
+		const returnData: INodeExecutionData[] = [];
 
         const credentials = await this.getCredentials('homeAssistantApi') as ICredentialDataDecryptedObject;
         
@@ -161,7 +164,7 @@ export class HomeAssistantTrigger implements INodeType {
 			socket.on('event', (message) => {
 				if (message.event_type === eventType || eventType === '*') {
 					if (entityId && message.data.entity_id !== entityId) {
-						return;
+						returnData.push({ json: { event: event_type, data } });
 					}
 					const output = includeEventData ? message : { entity_id: message.data.entity_id, state: message.data.new_state };
 					this.emit([this.helpers.returnJsonArray(output)]);
@@ -179,12 +182,10 @@ export class HomeAssistantTrigger implements INodeType {
 			if (error.name === 'NodeApiError') {
 				throw error;
 			} else {
-				throw new NodeOperationError(this.getNode(), `Execution error: ${error.message}`, { itemIndex });
+				throw new NodeOperationError(this.getNode(), `Execution error: ${error.message}`);
 			}		
 		}
 
-        return {
-            closeFunction,
-        };
+        return this.prepareOutputData(returnData)
     }
 }
