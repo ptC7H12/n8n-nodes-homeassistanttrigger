@@ -1,12 +1,13 @@
 import {
-    INodeType,
-    INodeTypeDescription,
-    IDataObject,
-    ITriggerFunctions,
-    ITriggerResponse,
+  INodeType,
+  INodeTypeDescription,
+  IDataObject,
+  ITriggerFunctions,
+  ITriggerResponse,
 	NodeApiError,
 	NodeOperationError,
-    ICredentialDataDecryptedObject,
+  ICredentialDataDecryptedObject,
+	NodeConnectionType
 } from 'n8n-workflow';
 import { io, Socket } from 'socket.io-client';
 
@@ -22,7 +23,7 @@ export class HomeAssistantTrigger implements INodeType {
             name: 'Home Assistant Trigger',
         },
         inputs: [],
-        outputs: ['main'],
+        outputs: [NodeConnectionType.main],
         credentials: [
             {
                 name: 'homeAssistantApi',
