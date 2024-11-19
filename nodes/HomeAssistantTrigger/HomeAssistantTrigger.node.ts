@@ -98,12 +98,12 @@ export class HomeAssistantTrigger implements INodeType {
 			autoConnect: false,
 		});
 
-		const closeFunction = () => void = () => {
+		async function closeFunction() {
 			if (socket.connected) {
 				this.logger.info('Disconnecting from Home Assistant WebSocket');
 				socket.disconnect();
 			}
-		};
+		}
 
 		try {
 			socket.connect();
