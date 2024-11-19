@@ -164,7 +164,7 @@ export class HomeAssistantTrigger implements INodeType {
 			socket.on('event', (message) => {
 				if (message.event_type === eventType || eventType === '*') {
 					if (entityId && message.data.entity_id !== entityId) {
-						returnData.push({ json: { event: event_type, data } });
+						return;//Data.push({ json: { event: message.event_type, data } });
 					}
 					const output = includeEventData ? message : { entity_id: message.data.entity_id, state: message.data.new_state };
 					this.emit([this.helpers.returnJsonArray(output)]);
@@ -186,6 +186,13 @@ export class HomeAssistantTrigger implements INodeType {
 			}		
 		}
 
-        return this.prepareOutputData(returnData)
+		async function closeFunction() {
+			// console.log('DISCONNECTING from Home Assistant...');
+			socket.close();
+		}
+
+		return {
+			closeFunction,
+		};
     }
 }
