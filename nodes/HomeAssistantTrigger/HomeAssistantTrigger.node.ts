@@ -169,19 +169,18 @@ export class HomeAssistantTrigger implements INodeType {
 			});
 
 
-			async function closeFunction() {
-				socket.close();
-			}
+			// Wait for a short time to allow for connection and initial data receipt
+			await new Promise(resolve => sleep(1000));
+
+			// Disconnect after processing
+			socket.disconnect();
+			
 		} catch (error){
-			if (this.continueOnFail()) {
-                    returnData.push({ json: { error: error.message }, pairedItem: itemIndex });
+			if (error.name === 'NodeApiError') {
+				throw error;
 			} else {
-				if (error.name === 'NodeApiError') {
-					throw error;
-				} else {
-					throw new NodeOperationError(this.getNode(), `Execution error: ${error.message}`, { itemIndex });
-				}
-			}
+				throw new NodeOperationError(this.getNode(), `Execution error: ${error.message}`, { itemIndex });
+			}		
 		}
 
         return {
